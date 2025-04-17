@@ -21,7 +21,7 @@ const options = {
     servers: [
       {
         url: process.env.VERCEL_URL
-          ? `https://${process.env.VERCEL_URL}`
+          ? `https://${process.env.VERCELL_URL}`
           : `http://localhost:${port}/`,
       },
     ],
