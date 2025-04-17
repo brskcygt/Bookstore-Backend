@@ -51,6 +51,6 @@ app.use("/",bookRouter);
 
 database();
 
-app.listen(port,()=>{
-    console.log(`Server started on port ${port}`);
+app.listen(port || 8000,()=>{
+    console.log(`Server started on port ${port || 8000}`);
 })
