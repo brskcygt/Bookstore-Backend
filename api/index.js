@@ -20,7 +20,7 @@ const options = {
           },
         servers:[
             {
-                url: `https://bookstore-backend-fdlt.vercel.app/`
+                url: `https://bookstore-backend.vercel.app/`
             }
         ]
     },
