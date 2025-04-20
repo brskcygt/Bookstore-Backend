@@ -26,7 +26,7 @@ const options = {
       },
     ],
   },
-  apis: [path.join(process.cwd(), '/controller/*.js')], 
+  apis: ["./controller/*.js"], // Yorumların bulunduğu dosya yolu
 };
 
 const swaggerSpec = swaggerJSDoc(options);
