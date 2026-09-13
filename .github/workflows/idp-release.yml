@@ -10,7 +10,7 @@ on:
         type: string
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-and-publish:
@@ -74,3 +74,12 @@ jobs:
             --version $env:VERSION `
             --manifest "artifacts/bookstore-$env:VERSION-manifest.json" `
             --allow-http
+
+      - name: Publish GitHub Release mirror
+        shell: powershell -NoProfile -ExecutionPolicy Bypass -Command ". '{0}'"
+        env:
+          GITHUB_RELEASE_TOKEN: ${{ github.token }}
+        run: |
+          node source-backend/scripts/publish-github-release.js `
+            --version $env:VERSION `
+            --directory artifacts
