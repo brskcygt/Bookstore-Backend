@@ -40,27 +40,27 @@ jobs:
           node-version: 24
 
       - name: Install backend production dependencies
-        shell: powershell
+        shell: powershell -NoProfile -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
           Set-Location source-backend/api
           npm install --omit=dev
 
       - name: Build frontend
-        shell: powershell
+        shell: powershell -NoProfile -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
           Set-Location source-frontend/client
           npm ci
           npm run build
 
       - name: Package artifacts
-        shell: powershell
+        shell: powershell -NoProfile -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
           New-Item -ItemType Directory -Force artifacts | Out-Null
           tar -czf "artifacts/bookstore-backend-$env:VERSION-win-x64.tar.gz" -C source-backend/api .
           tar -czf "artifacts/bookstore-frontend-$env:VERSION.tar.gz" -C source-frontend/client/build .
 
       - name: Create manifest and publish to IDP
-        shell: powershell
+        shell: powershell -NoProfile -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
           if ([string]::IsNullOrWhiteSpace($env:IDP_ARTIFACT_UPLOAD_TOKEN)) {
             throw "GitHub secret IDP_ARTIFACT_UPLOAD_TOKEN is missing."
