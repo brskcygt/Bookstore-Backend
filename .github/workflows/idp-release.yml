@@ -1,0 +1,76 @@
+name: IDP release
+run-name: IDP release ${{ inputs.VERSION }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      VERSION:
+        description: Immutable release version
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-publish:
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 60
+    env:
+      VERSION: ${{ inputs.VERSION }}
+      IDP_URL: http://192.168.0.242:3001
+      IDP_PROJECT_ID: "1789316389063"
+      IDP_ARTIFACT_UPLOAD_TOKEN: ${{ secrets.IDP_ARTIFACT_UPLOAD_TOKEN }}
+    steps:
+      - name: Checkout backend
+        uses: actions/checkout@v4
+        with:
+          path: source-backend
+
+      - name: Checkout frontend
+        uses: actions/checkout@v4
+        with:
+          repository: brskcygt/BookStore-MERN-GraduationProject
+          ref: master
+          path: source-frontend
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install backend production dependencies
+        shell: pwsh
+        run: |
+          Set-Location source-backend/api
+          npm install --omit=dev
+
+      - name: Build frontend
+        shell: pwsh
+        run: |
+          Set-Location source-frontend/client
+          npm ci
+          npm run build
+
+      - name: Package artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force artifacts | Out-Null
+          tar -czf "artifacts/bookstore-backend-$env:VERSION-win-x64.tar.gz" -C source-backend/api .
+          tar -czf "artifacts/bookstore-frontend-$env:VERSION.tar.gz" -C source-frontend/client/build .
+
+      - name: Create manifest and publish to IDP
+        shell: pwsh
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:IDP_ARTIFACT_UPLOAD_TOKEN)) {
+            throw "GitHub secret IDP_ARTIFACT_UPLOAD_TOKEN is missing."
+          }
+          node source-backend/scripts/make-manifest.js bookstore $env:VERSION $env:GITHUB_SHA `
+            "backend:win-x64:artifacts/bookstore-backend-$env:VERSION-win-x64.tar.gz" `
+            "frontend:any:artifacts/bookstore-frontend-$env:VERSION.tar.gz"
+          Move-Item "bookstore-$env:VERSION-manifest.json" artifacts/
+          node source-backend/scripts/upload-artifacts.js `
+            --project-id $env:IDP_PROJECT_ID `
+            --version $env:VERSION `
+            --manifest "artifacts/bookstore-$env:VERSION-manifest.json" `
+            --allow-http
