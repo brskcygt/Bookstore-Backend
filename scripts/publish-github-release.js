@@ -40,15 +40,26 @@ async function publishRelease({ token, repository, sha, version, directory, fetc
 
   const absoluteDirectory = path.resolve(directory || '');
   const entries = await fs.promises.readdir(absoluteDirectory, { withFileTypes: true });
+  const manifestNames = entries
+    .filter((entry) => entry.isFile() && entry.name.endsWith(`-${version}-manifest.json`))
+    .map((entry) => entry.name);
+  if (manifestNames.length !== 1) throw new Error(`Expected exactly one manifest for ${version}.`);
+  const manifestName = manifestNames[0];
+  const manifest = JSON.parse(await fs.promises.readFile(path.join(absoluteDirectory, manifestName), 'utf8'));
+  if (manifest.version !== version || !Array.isArray(manifest.artifacts) || manifest.artifacts.length === 0) {
+    throw new Error('Release manifest is invalid.');
+  }
+  const expectedNames = new Set([manifestName, ...manifest.artifacts.map((artifact) => artifact.file)]);
   const assets = [];
   for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
-    if (!ASSET.test(entry.name)) continue;
+    if (!expectedNames.has(entry.name)) continue;
+    if (!ASSET.test(entry.name)) throw new Error(`Invalid release asset name: ${entry.name}`);
     const filePath = path.join(absoluteDirectory, entry.name);
     const stat = await fs.promises.lstat(filePath);
     if (!entry.isFile() || stat.isSymbolicLink() || stat.size <= 0) throw new Error(`Invalid release asset: ${entry.name}`);
     assets.push({ name: entry.name, filePath, size: stat.size });
   }
-  if (assets.length < 2) throw new Error('Expected packaged artifacts and a manifest in the release directory.');
+  if (assets.length !== expectedNames.size) throw new Error('A manifest artifact is missing from the release directory.');
 
   const [owner, repo] = repository.split('/').map(encodeURIComponent);
   const apiBase = `https://api.github.com/repos/${owner}/${repo}`;

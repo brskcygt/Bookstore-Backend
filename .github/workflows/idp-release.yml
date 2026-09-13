@@ -55,6 +55,9 @@ jobs:
       - name: Package artifacts
         shell: powershell -NoProfile -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
+          if (Test-Path artifacts) {
+            Remove-Item artifacts -Recurse -Force
+          }
           New-Item -ItemType Directory -Force artifacts | Out-Null
           tar -czf "artifacts/bookstore-backend-$env:VERSION-win-x64.tar.gz" -C source-backend/api .
           tar -czf "artifacts/bookstore-frontend-$env:VERSION.tar.gz" -C source-frontend/client/build .
